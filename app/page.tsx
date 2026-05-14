@@ -477,20 +477,24 @@ export default function Home() {
           {/* Animated headline */}
           <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold tracking-tight leading-[1.05] mb-6 max-w-5xl" style={{ perspective: '800px' }}>
             <div className="mb-1">
-              {HERO_LINE1.split('').map((ch, i) => (
-                <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + i * 0.028}s` }}>
-                  {ch === ' ' ? ' ' : ch}
-                </span>
-              ))}
+              {HERO_LINE1.split('').map((ch, i) =>
+                ch === ' '
+                  ? <span key={i} style={{ animationDelay: `${0.3 + i * 0.028}s` }}>&nbsp;</span>
+                  : <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + i * 0.028}s` }}>{ch}</span>
+              )}
             </div>
             <div>
-              {HERO_LINE2_PLAIN.split('').map((ch, i) => (
-                <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + (HERO_LINE1.length + i) * 0.028}s` }}>{ch}</span>
-              ))}
+              {HERO_LINE2_PLAIN.split('').map((ch, i) =>
+                ch === ' '
+                  ? <span key={i} style={{ animationDelay: `${0.3 + (HERO_LINE1.length + i) * 0.028}s` }}>&nbsp;</span>
+                  : <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + (HERO_LINE1.length + i) * 0.028}s` }}>{ch}</span>
+              )}
               <span style={grad}>
-                {HERO_LINE2_ACCENT.split('').map((ch, i) => (
-                  <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + (HERO_LINE1.length + HERO_LINE2_PLAIN.length + i) * 0.028}s` }}>{ch}</span>
-                ))}
+                {HERO_LINE2_ACCENT.split('').map((ch, i) =>
+                  ch === ' '
+                    ? <span key={i} style={{ animationDelay: `${0.3 + (HERO_LINE1.length + HERO_LINE2_PLAIN.length + i) * 0.028}s` }}>&nbsp;</span>
+                    : <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + (HERO_LINE1.length + HERO_LINE2_PLAIN.length + i) * 0.028}s` }}>{ch}</span>
+                )}
               </span>
             </div>
           </h1>
