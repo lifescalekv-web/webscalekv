@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useEffect, useRef } from 'react'
 import { motion, useInView as useInViewFM } from 'framer-motion'
 import { Drawer } from 'vaul'
@@ -147,14 +148,6 @@ const FIRST_CALL_POINTS = [
   { icon: '🚀', text: 'Ответим на все вопросы без обязательств' },
 ]
 
-const TERMINAL_LINES = [
-  '> Инициализация WebScaleKv v2.0...',
-  '> Загрузка AI-модулей............. ✓',
-  '> Подключение к серверам.......... ✓',
-  '> Активация дизайн-системы........ ✓',
-  '> Добро пожаловать.',
-]
-
 // ─── Animation constants ───────────────────────────────────────────────────────
 
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1]
@@ -184,7 +177,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
       viewport={{ once: true }}
       transition={{ duration: 0.4, ease: EASE }}
     >
-      <span className="px-3 py-1 rounded-full border border-[#6366f1]/30 bg-[#6366f1]/10 text-[#6366f1] text-xs font-semibold uppercase tracking-widest">
+      <span className="px-3 py-1 rounded-full border border-[#6366f1]/30 bg-[#6366f1]/10 text-[#818cf8] text-xs font-semibold uppercase tracking-widest">
         {children}
       </span>
     </motion.div>
@@ -222,8 +215,8 @@ function ParticleField() {
     if (!ctx) return
 
     let animId: number
-    const COUNT = 80
-    const MAX_DIST = 120
+    const COUNT = 45
+    const MAX_DIST = 80
 
     const resize = () => {
       canvas.width = window.innerWidth
@@ -277,22 +270,17 @@ function ParticleField() {
     }
   }, [])
 
-  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />
+  return <canvas ref={canvasRef} aria-hidden="true" className="fixed inset-0 pointer-events-none" style={{ zIndex: 0, opacity: 0.25 }} />
 }
 
 // ─── Main component ─────────────────────────────────────────────────────────────
 
 export default function Home() {
-  // Terminal boot
-  const [showTerminal, setShowTerminal] = useState(true)
-  const [termLines, setTermLines] = useState<string[]>([])
-  const [termFading, setTermFading] = useState(false)
-  const [showHero, setShowHero] = useState(false)
-
-  // Custom cursor
-  const [cursor, setCursor] = useState({ x: -200, y: -200 })
+  // Custom cursor (DOM-direct, no re-render)
+  const cursorRef = useRef<HTMLDivElement>(null)
   const [cursorBig, setCursorBig] = useState(false)
   const targetXY = useRef({ x: -200, y: -200 })
+  const cursorXY = useRef({ x: -200, y: -200 })
   const rafRef = useRef<number>(0)
 
   // UI state
@@ -327,7 +315,14 @@ export default function Home() {
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseover', onOver)
     const loop = () => {
-      setCursor(p => ({ x: p.x + (targetXY.current.x - p.x) * 0.13, y: p.y + (targetXY.current.y - p.y) * 0.13 }))
+      cursorXY.current = {
+        x: cursorXY.current.x + (targetXY.current.x - cursorXY.current.x) * 0.13,
+        y: cursorXY.current.y + (targetXY.current.y - cursorXY.current.y) * 0.13,
+      }
+      if (cursorRef.current) {
+        cursorRef.current.style.left = cursorXY.current.x + 'px'
+        cursorRef.current.style.top = cursorXY.current.y + 'px'
+      }
       rafRef.current = requestAnimationFrame(loop)
     }
     rafRef.current = requestAnimationFrame(loop)
@@ -344,16 +339,6 @@ export default function Home() {
     return () => window.removeEventListener('scroll', fn)
   }, [])
 
-  useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = []
-    TERMINAL_LINES.forEach((line, i) => {
-      timers.push(setTimeout(() => setTermLines(p => [...p, line]), 300 + i * 420))
-    })
-    const fadeDelay = 300 + TERMINAL_LINES.length * 420 + 600
-    timers.push(setTimeout(() => { setTermFading(true); setShowHero(true) }, fadeDelay))
-    timers.push(setTimeout(() => setShowTerminal(false), fadeDelay + 700))
-    return () => timers.forEach(clearTimeout)
-  }, [])
 
   // Handlers
   function tilt(i: number, e: React.MouseEvent<HTMLDivElement>) {
@@ -382,54 +367,40 @@ export default function Home() {
     } finally { setSubmitting(false) }
   }
 
-  const grad = { background: 'linear-gradient(135deg,#6366f1,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }
-  const inputCls = 'w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-zinc-600 text-sm focus:outline-none focus:border-[#6366f1]/60 transition-colors duration-200'
+  const inputCls = 'w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-zinc-500 text-sm focus:outline-none focus:border-[#6366f1]/60 focus-visible:ring-2 focus-visible:ring-[#6366f1]/60 focus-visible:ring-offset-1 focus-visible:ring-offset-[#050505] transition-colors duration-200'
 
   return (
     <div className="scanlines min-h-screen bg-[#050505] text-white overflow-x-hidden">
 
       <ParticleField />
 
-      {/* ── Terminal boot ─────────────────────────────────────────────────── */}
-      {showTerminal && (
-        <div
-          className="fixed inset-0 z-[9990] bg-[#050505] flex items-center justify-center pointer-events-none transition-opacity duration-500"
-          style={{ opacity: termFading ? 0 : 1 }}
-        >
-          <div className="font-mono text-green-400 text-sm max-w-md w-full px-8">
-            {termLines.map((line, i) => (
-              <div key={i} className="mb-2 animate-fade-in-up" style={{ animationDelay: `${i * 0.05}s` }}>{line}</div>
-            ))}
-            {termLines.length > 0 && termLines.length < TERMINAL_LINES.length && (
-              <span className="inline-block w-2 h-4 bg-green-400 animate-pulse-slow align-middle" />
-            )}
-          </div>
-        </div>
-      )}
-
       {/* ── Custom cursor ─────────────────────────────────────────────────── */}
-      <div className="hidden md:block fixed z-[9999] pointer-events-none rounded-full border border-[#6366f1]/70 transition-[width,height,background] duration-200"
-        style={{ left: cursor.x, top: cursor.y, width: cursorBig ? 52 : 22, height: cursorBig ? 52 : 22, transform: 'translate(-50%,-50%)', background: cursorBig ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.2)' }} />
+      <div
+        ref={cursorRef}
+        aria-hidden="true"
+        className="hidden md:block fixed z-[9999] pointer-events-none rounded-full border border-[#6366f1]/70 transition-[width,height,background] duration-200"
+        style={{ width: cursorBig ? 52 : 22, height: cursorBig ? 52 : 22, transform: 'translate(-50%,-50%)', background: cursorBig ? 'rgba(99,102,241,0.12)' : 'rgba(99,102,241,0.2)' }}
+      />
 
       {/* ── Navbar ────────────────────────────────────────────────────────── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navScrolled ? 'border-b border-white/10 bg-[#050505]/90 backdrop-blur-md' : 'bg-transparent'}`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${navScrolled ? 'border-b border-white/10 bg-[#050505]/90 backdrop-blur-md' : 'bg-transparent'}`} role="navigation" aria-label="Основная навигация">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex items-center justify-between h-14 sm:h-16">
           <span className="glitch text-xl font-bold tracking-tight select-none shrink-0">
             <span className="text-[#6366f1]">Web</span>ScaleKv
           </span>
           <div className="hidden md:flex items-center gap-8">
             {NAV_LINKS.map(l => (
-              <a key={l.href} href={l.href} className="text-sm text-zinc-400 hover:text-white transition-colors duration-200">{l.label}</a>
+              <a key={l.href} href={l.href} className="text-sm text-zinc-400 hover:text-white transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6366f1]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050505] rounded-sm">{l.label}</a>
             ))}
           </div>
           <div className="flex items-center gap-3">
-            <a href="#contact" className="hidden md:inline-flex px-5 py-2 rounded-full bg-[#6366f1] text-white text-sm font-medium hover:bg-[#4f46e5] transition-all duration-200 hover:shadow-lg hover:shadow-[#6366f1]/30">
+            <a href="#contact" className="hidden md:inline-flex px-5 py-2 rounded-full bg-[#6366f1] text-white text-sm font-medium hover:bg-[#4f46e5] transition-all duration-200 hover:shadow-lg hover:shadow-[#6366f1]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6366f1]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050505]">
               Получить предложение
             </a>
             {/* Mobile menu — Vaul drawer */}
             <Drawer.Root open={mobileOpen} onOpenChange={setMobileOpen}>
               <Drawer.Trigger asChild>
-                <button className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg border border-white/10 text-zinc-400 hover:text-white transition-colors duration-200" aria-label="Меню">
+                <button className="md:hidden w-11 h-11 flex items-center justify-center rounded-lg border border-white/10 text-zinc-400 hover:text-white transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6366f1]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050505]" aria-label="Меню">
                   ☰
                 </button>
               </Drawer.Trigger>
@@ -467,20 +438,21 @@ export default function Home() {
         </div>
       </nav>
 
+      <main id="main-content">
       {/* ── Hero ──────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col items-center justify-center text-center px-4 sm:px-6 pt-14 sm:pt-16 overflow-hidden">
-        <div className="absolute inset-0 dot-grid opacity-50 pointer-events-none" />
-        <div className="absolute -top-20 -left-40 w-[700px] h-[700px] bg-[#6366f1]/10 rounded-full blur-[150px] pointer-events-none animate-float-slow" />
-        <div className="absolute bottom-0 -right-40 w-[600px] h-[600px] bg-[#a78bfa]/8 rounded-full blur-[130px] pointer-events-none animate-float-alt" />
+        <div className="absolute inset-0 dot-grid opacity-50 pointer-events-none" aria-hidden="true" />
+        <div className="absolute -top-20 -left-40 w-[700px] h-[700px] bg-[#6366f1]/10 rounded-full blur-[150px] pointer-events-none animate-float-slow" aria-hidden="true" />
+        <div className="absolute bottom-0 -right-40 w-[600px] h-[600px] bg-[#a78bfa]/8 rounded-full blur-[130px] pointer-events-none animate-float-alt" aria-hidden="true" />
 
         {/* Floating cards — xl+ only */}
-        <div className="hidden xl:block absolute left-10 top-[35%] glass rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl animate-float" style={{ animationDuration: '7s' }}>
+        <div aria-hidden="true" className="hidden xl:block absolute left-10 top-[35%] glass rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl animate-float" style={{ animationDuration: '7s' }}>
           <span className="text-yellow-400 mr-2">⚡</span>Сайт готов за 4 дня
         </div>
-        <div className="hidden xl:block absolute right-10 top-[30%] glass rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl animate-float-alt" style={{ animationDuration: '9s' }}>
+        <div aria-hidden="true" className="hidden xl:block absolute right-10 top-[30%] glass rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl animate-float-alt" style={{ animationDuration: '9s' }}>
           <span className="text-green-400 mr-2">🚀</span>+40% конверсия
         </div>
-        <div className="hidden xl:block absolute right-16 bottom-[30%] glass rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl animate-float-slow" style={{ animationDuration: '11s' }}>
+        <div aria-hidden="true" className="hidden xl:block absolute right-16 bottom-[30%] glass rounded-2xl px-4 py-3 text-sm font-medium shadow-2xl animate-float-slow" style={{ animationDuration: '11s' }}>
           <span className="text-blue-400 mr-2">✓</span>Клиент доволен
         </div>
 
@@ -504,7 +476,7 @@ export default function Home() {
                   {ch === ' ' ? ' ' : ch}
                 </span>
               ))}
-              <span style={grad}>
+              <span className="text-[#818cf8]">
                 {HERO_LINE2_ACCENT.split('').map((ch, i) => (
                   <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + (HERO_LINE1.length + HERO_LINE2_PLAIN.length + i) * 0.028}s` }}>
                     {ch === ' ' ? ' ' : ch}
@@ -528,12 +500,15 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Bento stats */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-lg sm:max-w-none mb-10 sm:mb-14 animate-fade-in-up" style={{ animationDelay: '1.7s' }}>
-            {[{ v: '14 дней', l: 'среднее время запуска' }, { v: '3×', l: 'быстрее конкурентов' }, { v: '100%', l: 'клиентов рекомендуют' }].map(s => (
-              <div key={s.v} className="glass rounded-2xl px-5 py-4 text-center flex-1">
-                <div className="text-xl sm:text-2xl font-bold" style={grad}>{s.v}</div>
-                <div className="text-xs text-zinc-500 mt-1">{s.l}</div>
+          {/* Stats row */}
+          <div className="flex items-center justify-center gap-8 sm:gap-12 mb-10 sm:mb-14 animate-fade-in-up" style={{ animationDelay: '1.7s' }} aria-label="Ключевые показатели">
+            {[{ v: '14 дней', l: 'до запуска' }, { v: '3×', l: 'быстрее' }, { v: '100%', l: 'довольны' }].map((s, i) => (
+              <div key={s.v} className="flex items-center gap-8 sm:gap-12">
+                {i > 0 && <span className="text-white/20 select-none">·</span>}
+                <div className="text-center">
+                  <div className="text-xl sm:text-2xl font-bold text-[#818cf8]">{s.v}</div>
+                  <div className="text-xs text-zinc-500 mt-0.5">{s.l}</div>
+                </div>
               </div>
             ))}
           </div>
@@ -583,7 +558,7 @@ export default function Home() {
                   </div>
                   <div className="flex items-baseline gap-2 py-3 border-y border-white/6">
                     <span className="text-2xl font-bold text-[#6366f1]">{s.price}</span>
-                    <span className="text-zinc-600 text-sm">· {s.duration}</span>
+                    <span className="text-zinc-500 text-sm">· {s.duration}</span>
                   </div>
                   <ul className="flex flex-col gap-2.5 flex-1">
                     {s.features.map(f => (
@@ -631,7 +606,7 @@ export default function Home() {
                   <div className="text-xs font-bold text-[#6366f1] tracking-widest">{step.num}</div>
                   <div>
                     <h3 className="font-bold text-base mb-0.5">{step.title}</h3>
-                    <div className="text-xs text-zinc-600 mb-2">{step.duration}</div>
+                    <div className="text-xs text-zinc-500 mb-2">{step.duration}</div>
                     <p className="text-xs text-zinc-400 leading-relaxed">{step.desc}</p>
                   </div>
                 </div>
@@ -646,7 +621,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <SectionLabel>Преимущества</SectionLabel>
           <motion.h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4" {...clipReveal}>
-            Почему <span style={grad}>AI-разработка</span>
+            Почему <span className="text-[#818cf8]">AI-разработка</span>
           </motion.h2>
           <motion.p className="text-zinc-400 text-center mb-10 sm:mb-16 max-w-lg mx-auto" {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 }}>
             AI меняет скорость и стоимость разработки. Вы получаете качественный продукт за время, которое раньше занимало согласование ТЗ.
@@ -655,20 +630,33 @@ export default function Home() {
             {WHY_AI.map((c, i) => (
               <motion.div
                 key={c.title}
-                className="h-full"
+                className={`h-full ${i === 0 ? 'lg:col-span-2' : ''}`}
                 initial={{ opacity: 0, y: 32 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-80px' }}
                 transition={{ duration: 0.6, ease: EASE, delay: i * 0.08 }}
                 whileHover={{ y: -6, transition: { duration: 0.2, ease: 'easeOut' } }}
               >
-                <div className="group p-6 sm:p-7 rounded-2xl border border-white/10 bg-white/[0.02] hover:border-[#6366f1]/40 hover:bg-[#6366f1]/5 transition-colors duration-200 flex gap-5 h-full">
-                  <span className="text-3xl shrink-0 mt-0.5">{c.icon}</span>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1.5 group-hover:text-[#818cf8] transition-colors duration-200">{c.title}</h3>
-                    <p className="text-sm text-zinc-400 leading-relaxed">{c.desc}</p>
+                {i === 0 ? (
+                  <div className="group p-6 sm:p-8 rounded-2xl border border-[#6366f1]/20 bg-[#6366f1]/5 hover:border-[#6366f1]/40 hover:bg-[#6366f1]/8 transition-colors duration-200 h-full flex flex-col sm:flex-row gap-6 items-start">
+                    <div className="shrink-0">
+                      <div className="text-5xl sm:text-6xl font-bold text-[#818cf8] leading-none">3×</div>
+                      <div className="text-xs text-zinc-500 mt-1 uppercase tracking-widest">быстрее</div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-xl mb-2 group-hover:text-[#818cf8] transition-colors duration-200">{c.title}</h3>
+                      <p className="text-sm text-zinc-400 leading-relaxed">{c.desc}</p>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="group p-6 sm:p-7 rounded-2xl border border-white/10 bg-white/[0.02] hover:border-[#6366f1]/40 hover:bg-[#6366f1]/5 transition-colors duration-200 flex gap-5 h-full">
+                    <span className="text-3xl shrink-0 mt-0.5">{c.icon}</span>
+                    <div>
+                      <h3 className="font-bold text-lg mb-1.5 group-hover:text-[#818cf8] transition-colors duration-200">{c.title}</h3>
+                      <p className="text-sm text-zinc-400 leading-relaxed">{c.desc}</p>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
@@ -708,13 +696,13 @@ export default function Home() {
                   <div className="relative h-[180px] sm:h-[220px] overflow-hidden shrink-0">
                     {c.image ? (
                       <>
-                        <img src={c.image} alt={c.title} className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                        <Image src={c.image} alt={c.title} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover object-top transition-transform duration-500 group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" aria-hidden="true" />
                       </>
                     ) : (
                       <div className="w-full h-full bg-[#0d0d0d] border-b border-dashed border-[#6366f1]/30 flex flex-col items-center justify-center gap-2">
                         <span className="text-4xl text-[#6366f1]/40">+</span>
-                        <span className="text-xs text-zinc-600">Ваш проект</span>
+                        <span className="text-xs text-zinc-500">Ваш проект</span>
                       </div>
                     )}
                   </div>
@@ -765,7 +753,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <SectionLabel>Зачем сайт</SectionLabel>
           <motion.h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-3" {...clipReveal}>
-            Без сайта вы теряете клиентов<br /><span style={grad}>прямо сейчас</span>
+            Без сайта вы теряете клиентов<br /><span className="text-[#818cf8]">прямо сейчас</span>
           </motion.h2>
           <motion.p className="text-zinc-400 text-center mb-10 sm:mb-16 max-w-lg mx-auto" {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 }}>
             73% людей ищут услуги в интернете перед покупкой. Вопрос лишь в том — найдут ли они вас.
@@ -802,11 +790,14 @@ export default function Home() {
               </div>
             </motion.div>
           </div>
-          <motion.blockquote className="border-l-4 border-[#6366f1] pl-6 max-w-3xl mx-auto" {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.15 }}>
-            <p className="text-lg sm:text-xl md:text-2xl font-medium text-zinc-300 leading-relaxed italic">
-              "Сайт — это единственный менеджер по продажам который работает 24/7, никогда не болеет и не просит зарплату."
-            </p>
-          </motion.blockquote>
+          <motion.div className="relative max-w-3xl mx-auto" {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.15 }}>
+            <span aria-hidden="true" className="absolute -top-4 -left-2 text-6xl text-[#6366f1]/30 font-serif leading-none select-none">"</span>
+            <blockquote className="border border-white/10 rounded-2xl p-8">
+              <p className="text-lg sm:text-xl md:text-2xl font-medium text-zinc-300 leading-relaxed">
+                Сайт — это единственный менеджер по продажам который работает 24/7, никогда не болеет и не просит зарплату.
+              </p>
+            </blockquote>
+          </motion.div>
         </div>
       </section>
 
@@ -858,13 +849,13 @@ export default function Home() {
                 <div className="mt-8 p-5 rounded-xl bg-[#6366f1]/10 border border-[#6366f1]/20">
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-sm text-zinc-400">Выручка с сайта:</span>
-                    <span className="text-xl sm:text-2xl font-bold" style={grad}>{revenue.toLocaleString('ru')} ₽/мес</span>
+                    <span className="text-xl sm:text-2xl font-bold text-[#818cf8]">{revenue.toLocaleString('ru')} ₽/мес</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-zinc-400">Окупаемость сайта:</span>
                     <span className="text-lg font-bold text-white">за {daysROI} дней</span>
                   </div>
-                  <div className="mt-3 text-xs text-zinc-600">*При стоимости сайта 30 000 ₽</div>
+                  <div className="mt-3 text-xs text-zinc-500">*При стоимости сайта 30 000 ₽</div>
                 </div>
                 <a href="#contact" className="mt-5 block py-3 rounded-full bg-[#6366f1] text-white text-sm font-semibold text-center hover:bg-[#4f46e5] transition-colors duration-200">
                   Хочу такой сайт →
@@ -880,7 +871,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <SectionLabel>Доверие</SectionLabel>
           <motion.h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-4" {...clipReveal}>
-            Нам доверяют потому что<br /><span style={grad}>мы прозрачны</span>
+            Нам доверяют потому что<br /><span className="text-[#818cf8]">мы прозрачны</span>
           </motion.h2>
           <motion.p className="text-zinc-400 text-center mb-10 sm:mb-16 max-w-md mx-auto" {...fadeUp} transition={{ ...fadeUp.transition, delay: 0.1 }}>
             Никаких сюрпризов. Всё зафиксировано заранее.
@@ -925,12 +916,14 @@ export default function Home() {
                     <div key={i} className="border border-white/8 rounded-xl overflow-hidden">
                       <button
                         onClick={() => setFaqOpen(faqOpen === i ? null : i)}
-                        className="w-full flex items-center justify-between gap-3 p-4 text-left text-sm hover:bg-white/5 transition-colors duration-200"
+                        aria-expanded={faqOpen === i}
+                        aria-controls={`faq-${i}`}
+                        className="w-full flex items-center justify-between gap-3 p-4 text-left text-sm hover:bg-white/5 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6366f1]/60 focus-visible:ring-inset"
                       >
                         <span className="text-zinc-200 font-medium">{item.q}</span>
-                        <span className={`text-[#6366f1] shrink-0 text-xl font-light transition-transform duration-200 ${faqOpen === i ? 'rotate-45' : ''}`}>+</span>
+                        <span aria-hidden="true" className={`text-[#6366f1] shrink-0 text-xl font-light transition-transform duration-200 ${faqOpen === i ? 'rotate-45' : ''}`}>+</span>
                       </button>
-                      <div className={`overflow-hidden transition-[max-height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${faqOpen === i ? 'max-h-40' : 'max-h-0'}`}>
+                      <div id={`faq-${i}`} role="region" className={`overflow-hidden transition-[max-height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${faqOpen === i ? 'max-h-40' : 'max-h-0'}`}>
                         <p className="px-4 pb-4 text-sm text-zinc-400 leading-relaxed">{item.a}</p>
                       </div>
                     </div>
@@ -944,13 +937,13 @@ export default function Home() {
 
       {/* ── Contact ──────────────────────────────────────────────────────── */}
       <section id="contact" className="py-16 sm:py-28 px-4 sm:px-6 border-t border-white/5 bg-white/[0.01] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#6366f1]/6 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#6366f1]/6 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
         <div className="max-w-5xl mx-auto relative">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-start">
             <motion.div {...fadeUp}>
               <SectionLabel>Контакт</SectionLabel>
               <motion.h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-5" {...clipReveal}>
-                Обсудим<br /><span style={grad}>ваш проект</span>
+                Обсудим<br /><span className="text-[#818cf8]">ваш проект</span>
               </motion.h2>
               <p className="text-zinc-400 mb-8 sm:mb-10 leading-relaxed">Оставьте заявку — свяжемся в течение дня и назначим бесплатный звонок на 15 минут.</p>
               <div className="mb-3 text-sm font-semibold text-zinc-300">На первом звонке:</div>
@@ -999,10 +992,10 @@ export default function Home() {
                     <textarea name="description" value={form.description} onChange={handleChange} rows={4} placeholder="Расскажите о вашем бизнесе и задаче..." className={inputCls + ' resize-none'} />
                   </div>
                   <button type="submit" disabled={submitting}
-                    className="py-4 rounded-full bg-[#6366f1] text-white font-semibold hover:bg-[#4f46e5] transition-colors duration-200 hover:shadow-xl hover:shadow-[#6366f1]/30 text-base disabled:opacity-60 disabled:cursor-not-allowed">
+                    className="py-4 rounded-full bg-[#6366f1] text-white font-semibold hover:bg-[#4f46e5] transition-colors duration-200 hover:shadow-xl hover:shadow-[#6366f1]/30 text-base disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6366f1]/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050505]">
                     {submitting ? 'Отправляем...' : 'Отправить заявку →'}
                   </button>
-                  <p className="text-center text-xs text-zinc-700">Нажимая кнопку, вы соглашаетесь с обработкой персональных данных</p>
+                  <p className="text-center text-xs text-zinc-500">Нажимая кнопку, вы соглашаетесь с обработкой персональных данных</p>
                 </form>
               </div>
             </motion.div>
@@ -1010,16 +1003,18 @@ export default function Home() {
         </div>
       </section>
 
+      </main>
+
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <footer className="py-12 px-4 sm:px-6 border-t border-white/5">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="flex flex-col items-center md:items-start gap-2">
             <span className="text-xl font-bold select-none"><span className="text-[#6366f1]">Web</span>ScaleKv</span>
-            <p className="text-xs text-zinc-600 max-w-xs leading-relaxed">AI-first веб-агентство. Современные сайты для малого бизнеса — быстро, красиво, по делу.</p>
+            <p className="text-xs text-zinc-500 max-w-xs leading-relaxed">AI-first веб-агентство. Современные сайты для малого бизнеса — быстро, красиво, по делу.</p>
           </div>
           <div className="flex flex-col items-center md:items-end gap-2">
             <a href="mailto:lifescalekv@gmail.com" className="text-sm text-zinc-400 hover:text-[#6366f1] transition-colors duration-200">lifescalekv@gmail.com</a>
-            <p className="text-xs text-zinc-700">© 2026 WebScaleKv. Все права защищены.</p>
+            <p className="text-xs text-zinc-500">© 2026 WebScaleKv. Все права защищены.</p>
           </div>
         </div>
       </footer>

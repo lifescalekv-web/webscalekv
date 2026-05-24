@@ -2,7 +2,10 @@
 
 :root {
   --background: #050505;
-  --foreground: #ffffff;
+  --foreground: #f4f4f6;
+  --accent: #6366f1;
+  --accent-muted: #818cf8;
+  --accent-dim: rgba(99,102,241,0.1);
 }
 
 @theme inline {
