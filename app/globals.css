@@ -137,6 +137,10 @@ input[type="range"]::-webkit-slider-thumb {
   box-shadow: 0 0 8px rgba(99,102,241,0.5);
 }
 
+/* ── Sonner toast — restore cursor inside toasts ───────────────────────────── */
+
+.sonner-toast { cursor: auto !important; }
+
 /* ── Funnel bars — full width on mobile, percentage on desktop ──────────────── */
 
 .funnel-bar { width: 100%; }

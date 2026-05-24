@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { toast } from 'sonner'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -324,9 +325,7 @@ export default function Home() {
 
   // Form state
   const [form, setForm] = useState({ name: '', phone: '', projectType: '', budget: '', description: '' })
-  const [submitted, setSubmitted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState('')
 
   // Effects
   useEffect(() => {
@@ -381,13 +380,20 @@ export default function Home() {
   }
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    setSubmitting(true); setSubmitError('')
+    setSubmitting(true)
     try {
       const res = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
       if (!res.ok) throw new Error()
-      setSubmitted(true)
-    } catch { setSubmitError('Не удалось отправить заявку. Попробуйте ещё раз.') }
-    finally { setSubmitting(false) }
+      setForm({ name: '', phone: '', projectType: '', budget: '', description: '' })
+      toast.success('Заявка отправлена!', {
+        description: 'Свяжемся с вами в течение рабочего дня.',
+        duration: 5000,
+      })
+    } catch {
+      toast.error('Не удалось отправить заявку', {
+        description: 'Попробуйте ещё раз или напишите нам напрямую.',
+      })
+    } finally { setSubmitting(false) }
   }
 
   const grad = { background: 'linear-gradient(135deg,#6366f1,#a78bfa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }
@@ -477,24 +483,24 @@ export default function Home() {
           {/* Animated headline */}
           <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold tracking-tight leading-[1.05] mb-6 max-w-5xl" style={{ perspective: '800px' }}>
             <div className="mb-1">
-              {HERO_LINE1.split('').map((ch, i) =>
-                ch === ' '
-                  ? <span key={i} style={{ animationDelay: `${0.3 + i * 0.028}s` }}>&nbsp;</span>
-                  : <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + i * 0.028}s` }}>{ch}</span>
-              )}
+              {HERO_LINE1.split('').map((ch, i) => (
+                <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + i * 0.028}s` }}>
+                  {ch === ' ' ? ' ' : ch}
+                </span>
+              ))}
             </div>
             <div>
-              {HERO_LINE2_PLAIN.split('').map((ch, i) =>
-                ch === ' '
-                  ? <span key={i} style={{ animationDelay: `${0.3 + (HERO_LINE1.length + i) * 0.028}s` }}>&nbsp;</span>
-                  : <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + (HERO_LINE1.length + i) * 0.028}s` }}>{ch}</span>
-              )}
+              {HERO_LINE2_PLAIN.split('').map((ch, i) => (
+                <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + (HERO_LINE1.length + i) * 0.028}s` }}>
+                  {ch === ' ' ? ' ' : ch}
+                </span>
+              ))}
               <span style={grad}>
-                {HERO_LINE2_ACCENT.split('').map((ch, i) =>
-                  ch === ' '
-                    ? <span key={i} style={{ animationDelay: `${0.3 + (HERO_LINE1.length + HERO_LINE2_PLAIN.length + i) * 0.028}s` }}>&nbsp;</span>
-                    : <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + (HERO_LINE1.length + HERO_LINE2_PLAIN.length + i) * 0.028}s` }}>{ch}</span>
-                )}
+                {HERO_LINE2_ACCENT.split('').map((ch, i) => (
+                  <span key={i} className="hero-char" style={{ animationDelay: `${0.3 + (HERO_LINE1.length + HERO_LINE2_PLAIN.length + i) * 0.028}s` }}>
+                    {ch === ' ' ? ' ' : ch}
+                  </span>
+                ))}
               </span>
             </div>
           </h1>
@@ -912,62 +918,45 @@ export default function Home() {
             </Reveal>
             <Reveal delay={150}>
               <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-sm p-6 sm:p-8">
-                {submitted ? (
-                  <div className="flex flex-col items-center gap-5 py-14 text-center">
-                    <div className="relative">
-                      <div className="w-20 h-20 rounded-full bg-[#6366f1]/20 border border-[#6366f1]/40 flex items-center justify-center text-4xl animate-fade-in-up">✓</div>
-                      {[...Array(8)].map((_, i) => (
-                        <div key={i} className="absolute w-2 h-2 rounded-full top-1/2 left-1/2"
-                          style={{ background: i % 2 === 0 ? '#6366f1' : '#a78bfa', animation: `confetti 0.9s ${i * 0.08}s cubic-bezier(0.22,1,0.36,1) both`, transform: `rotate(${i * 45}deg) translateY(-45px)` }} />
-                      ))}
+                <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs text-zinc-500 font-medium">Имя *</label>
+                      <input name="name" value={form.name} onChange={handleChange} required placeholder="Иван Иванов" className={inputCls} />
                     </div>
-                    <div>
-                      <p className="text-2xl font-bold mb-2">Заявка отправлена!</p>
-                      <p className="text-zinc-400 text-sm">Свяжемся в течение рабочего дня.</p>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-xs text-zinc-500 font-medium">Телефон *</label>
+                      <input name="phone" value={form.phone} onChange={handleChange} required type="tel" placeholder="+7 (999) 000-00-00" className={inputCls} />
                     </div>
                   </div>
-                ) : (
-                  <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs text-zinc-500 font-medium">Имя *</label>
-                        <input name="name" value={form.name} onChange={handleChange} required placeholder="Иван Иванов" className={inputCls} />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-xs text-zinc-500 font-medium">Телефон *</label>
-                        <input name="phone" value={form.phone} onChange={handleChange} required type="tel" placeholder="+7 (999) 000-00-00" className={inputCls} />
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs text-zinc-500 font-medium">Тип проекта</label>
-                      <select name="projectType" value={form.projectType} onChange={handleChange} className={inputCls}>
-                        <option value="" className="bg-[#050505]">Выберите тип...</option>
-                        <option value="landing" className="bg-[#050505]">Лендинг (от 15 000 ₽)</option>
-                        <option value="site" className="bg-[#050505]">Сайт-визитка (от 40 000 ₽)</option>
-                        <option value="other" className="bg-[#050505]">Другое / пока не знаю</option>
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs text-zinc-500 font-medium">Бюджет</label>
-                      <select name="budget" value={form.budget} onChange={handleChange} className={inputCls}>
-                        <option value="" className="bg-[#050505]">Выберите бюджет...</option>
-                        <option value="10-20" className="bg-[#050505]">10 000 — 20 000 ₽</option>
-                        <option value="20-50" className="bg-[#050505]">20 000 — 50 000 ₽</option>
-                        <option value="50-100" className="bg-[#050505]">50 000 — 100 000 ₽</option>
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-xs text-zinc-500 font-medium">О проекте</label>
-                      <textarea name="description" value={form.description} onChange={handleChange} rows={4} placeholder="Расскажите о вашем бизнесе и задаче..." className={inputCls + ' resize-none'} />
-                    </div>
-                    <button type="submit" disabled={submitting}
-                      className="py-4 rounded-full bg-[#6366f1] text-white font-semibold hover:bg-[#4f46e5] transition-all duration-300 hover:shadow-xl hover:shadow-[#6366f1]/30 text-base disabled:opacity-60 disabled:cursor-not-allowed">
-                      {submitting ? 'Отправляем...' : 'Отправить заявку →'}
-                    </button>
-                    {submitError && <p className="text-center text-sm text-red-400">{submitError}</p>}
-                    <p className="text-center text-xs text-zinc-700">Нажимая кнопку, вы соглашаетесь с обработкой персональных данных</p>
-                  </form>
-                )}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-zinc-500 font-medium">Тип проекта</label>
+                    <select name="projectType" value={form.projectType} onChange={handleChange} className={inputCls}>
+                      <option value="" className="bg-[#050505]">Выберите тип...</option>
+                      <option value="landing" className="bg-[#050505]">Лендинг (от 15 000 ₽)</option>
+                      <option value="site" className="bg-[#050505]">Сайт-визитка (от 40 000 ₽)</option>
+                      <option value="other" className="bg-[#050505]">Другое / пока не знаю</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-zinc-500 font-medium">Бюджет</label>
+                    <select name="budget" value={form.budget} onChange={handleChange} className={inputCls}>
+                      <option value="" className="bg-[#050505]">Выберите бюджет...</option>
+                      <option value="10-20" className="bg-[#050505]">10 000 — 20 000 ₽</option>
+                      <option value="20-50" className="bg-[#050505]">20 000 — 50 000 ₽</option>
+                      <option value="50-100" className="bg-[#050505]">50 000 — 100 000 ₽</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs text-zinc-500 font-medium">О проекте</label>
+                    <textarea name="description" value={form.description} onChange={handleChange} rows={4} placeholder="Расскажите о вашем бизнесе и задаче..." className={inputCls + ' resize-none'} />
+                  </div>
+                  <button type="submit" disabled={submitting}
+                    className="py-4 rounded-full bg-[#6366f1] text-white font-semibold hover:bg-[#4f46e5] transition-all duration-300 hover:shadow-xl hover:shadow-[#6366f1]/30 text-base disabled:opacity-60 disabled:cursor-not-allowed">
+                    {submitting ? 'Отправляем...' : 'Отправить заявку →'}
+                  </button>
+                  <p className="text-center text-xs text-zinc-700">Нажимая кнопку, вы соглашаетесь с обработкой персональных данных</p>
+                </form>
               </div>
             </Reveal>
           </div>
